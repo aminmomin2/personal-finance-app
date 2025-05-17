@@ -31,7 +31,7 @@ export default function RootLayout({
             <Topbar />
 
             {/* Main Content */}
-            <main className="h-full flex items">
+            <main>
               {children}
             </main>
           </div>

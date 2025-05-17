@@ -14,10 +14,10 @@ import {
 
 const navItems = [
   {label: "Dashboard", href: "/dashboard", icon: Home},
-  { label: "Transactions",href: "/transactions",icon: CreditCard },
-  { label: "Reports",     href: "/reports",     icon: BarChart2 },
-  { label: "Settings",    href: "/settings",    icon: Settings },
-  { label: "Logout",      href: "/logout",      icon: LogOut },
+  { label: "Spending", href: "/spending", icon: CreditCard },
+  { label: "Reports", href: "/reports", icon: BarChart2 },
+  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Logout", href: "/logout", icon: LogOut },
 ]
 
 export default function Sidebar() {
