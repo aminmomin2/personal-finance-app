@@ -1,6 +1,6 @@
 import { EllipsisVertical } from "lucide-react";
-import { NetWorth } from "../components/NetWorth";
-import { Spending } from "../components/Spending";
+import { NetWorth } from "../../components/NetWorth";
+import { Spending } from "../../components/Spending";
 
 export default function Dashboard() {
   return (

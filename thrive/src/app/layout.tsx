@@ -23,19 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.className}>
       <body className="font-sans">
-        <div className="flex h-screen">
-          {/* Sidebar */}
-          <Sidebar />
-          <div className="flex flex-col flex-1">
-            {/* Topbar */}
-            <Topbar />
-
-            {/* Main Content */}
-            <main>
-              {children}
-            </main>
-          </div>
-        </div>
+        {children}
       </body>
     </html>
   );
