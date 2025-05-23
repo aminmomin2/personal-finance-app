@@ -11,13 +11,13 @@ import {
   LogOut,
   Icon,
 } from "lucide-react"
+import { signOut } from "next-auth/react";
 
 const navItems = [
   {label: "Dashboard", href: "/dashboard", icon: Home},
   { label: "Spending", href: "/spending", icon: CreditCard },
   { label: "Reports", href: "/reports", icon: BarChart2 },
   { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Logout", href: "/logout", icon: LogOut },
 ]
 
 export default function Sidebar() {
@@ -77,6 +77,20 @@ export default function Sidebar() {
             );
           })}
         </ul>
+        <form action={async() => {
+          await signOut()
+        }}>
+          <button className="w-full">
+            <p
+              className="flex items-center gap-3 px-4 py-2 rounded-lg transition hover:bg-[var(--hover-color-light)]"
+            >
+              <LogOut
+                className="w-5 h-5 text-[var(--color-text-dark)] dark:text-[var(--color-text-light)]"
+              />
+              Logout
+            </p>
+          </button>
+        </form>
       </nav>
     </aside>
   )
