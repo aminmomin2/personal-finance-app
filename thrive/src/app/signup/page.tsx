@@ -15,10 +15,24 @@ import {
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 
-export default function Login() {
+const PASSWORD_REQUIREMENTS = [
+  { id: 'length', text: 'At least 8 characters', regex: /.{8,}/ },
+  { id: 'uppercase', text: 'At least one uppercase letter', regex: /[A-Z]/ },
+  { id: 'lowercase', text: 'At least one lowercase letter', regex: /[a-z]/ },
+  { id: 'number', text: 'At least one number', regex: /[0-9]/ },
+  { id: 'special', text: 'At least one special character', regex: /[!@#$%^&*(),.?":{}|<>]/ },
+]
+
+export default function SignUp() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+
+  const validatePassword = (pass: string) => {
+    return PASSWORD_REQUIREMENTS.every(req => req.regex.test(pass))
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -28,38 +42,40 @@ export default function Login() {
     const formData = new FormData(e.currentTarget)
     const email = formData.get("email") as string
     const password = formData.get("password") as string
+    const confirmPassword = formData.get("confirmPassword") as string
+
+    if (!validatePassword(password)) {
+      setError("Password does not meet requirements")
+      setLoading(false)
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      setLoading(false)
+      return
+    }
 
     try {
-      // First, verify credentials with our API
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+        }),
       })
-
-      const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to login")
+        const data = await response.json()
+        throw new Error(data.message || "Registration failed")
       }
 
-      // If API verification succeeds, sign in with NextAuth
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      })
-
-      if (result?.error) {
-        throw new Error(result.error)
-      }
-
-      // Redirect to dashboard on success
-      router.push("/dashboard")
+      router.push("/login")
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Login failed")
+      setError(error instanceof Error ? error.message : "Registration failed")
     } finally {
       setLoading(false)
     }
@@ -69,8 +85,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-light)] py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-[400px] shadow-lg">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
-          <CardDescription className="text-center">Sign in to your account</CardDescription>
+          <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
+          <CardDescription className="text-center">Sign up to get started with your account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -93,8 +109,46 @@ export default function Login() {
                 type="password" 
                 placeholder="Enter your password" 
                 required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full"
               />
+              <div className="mt-2 space-y-1.5">
+                {PASSWORD_REQUIREMENTS.map((req) => (
+                  <div key={req.id} className="flex items-center gap-2 text-sm">
+                    <div 
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        req.regex.test(password) 
+                          ? 'bg-green-500' 
+                          : 'bg-gray-300'
+                      }`} 
+                    />
+                    <span className={req.regex.test(password) ? 'text-green-600' : 'text-gray-500'}>
+                      {req.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input 
+                id="confirmPassword" 
+                name="confirmPassword" 
+                type="password" 
+                placeholder="Confirm your password" 
+                required 
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={`w-full ${
+                  confirmPassword && password !== confirmPassword 
+                    ? 'border-red-500 focus-visible:ring-red-500' 
+                    : ''
+                }`}
+              />
+              {confirmPassword && password !== confirmPassword && (
+                <p className="text-sm text-red-500">Passwords do not match</p>
+              )}
             </div>
             {error && (
               <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-md">
@@ -109,10 +163,10 @@ export default function Login() {
               {loading ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Signing in...
+                  Creating account...
                 </div>
               ) : (
-                "Sign In"
+                "Create Account"
               )}
             </Button>
           </form>
@@ -139,16 +193,16 @@ export default function Login() {
               <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
               <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
             </svg>
-            Sign in with Google
+            Sign up with Google
           </Button>
           <p className="text-sm text-center text-muted-foreground">
-            Don't have an account?{" "}
-            <a href="/signup" className="text-primary hover:underline font-medium">
-              Sign up
+            Already have an account?{" "}
+            <a href="/login" className="text-primary hover:underline font-medium">
+              Sign in
             </a>
           </p>
         </CardFooter>
       </Card>
     </div>
   )
-}
+} 
