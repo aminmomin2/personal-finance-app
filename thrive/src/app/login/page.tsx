@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useCallback, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Button } from "../components/ui/button"
 import {
@@ -15,19 +15,90 @@ import {
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 
+type FormData = {
+  email: string
+  password: string
+}
+
+type FormErrors = {
+  email?: string
+  password?: string
+}
+
+type TouchedFields = {
+  email: boolean
+  password: boolean
+}
+
 export default function Login() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState<FormData>({
+    email: '',
+    password: ''
+  })
+  const [touched, setTouched] = useState<TouchedFields>({
+    email: false,
+    password: false
+  })
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [isValid, setIsValid] = useState(false)
+
+  // Handle redirect messages
+  useEffect(() => {
+    const message = searchParams.get('message')
+    if (message === 'registered') {
+      setError('Registration successful! Please sign in.')
+    } else if (message === 'unauthorized') {
+      setError('Please sign in to access this page.')
+    }
+  }, [searchParams])
+
+  const validateEmail = useCallback((email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }, [])
+
+  const validateForm = useCallback((data: FormData): FormErrors => {
+    const newErrors: FormErrors = {}
+
+    if (!data.email) {
+      newErrors.email = 'Email is required'
+    } else if (!validateEmail(data.email)) {
+      newErrors.email = 'Please enter a valid email address'
+    }
+
+    if (!data.password) {
+      newErrors.password = 'Password is required'
+    }
+
+    return newErrors
+  }, [validateEmail])
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+    setTouched(prev => ({ ...prev, [name]: true }))
+    setError(null) // Clear any previous errors when user types
+  }, [])
+
+  const handleBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+    const { name } = e.target
+    setTouched(prev => ({ ...prev, [name]: true }))
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
+    const newErrors = validateForm(formData)
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      setLoading(false)
+      return
+    }
 
     try {
       // First, verify credentials with our API
@@ -36,7 +107,10 @@ export default function Login() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
       })
 
       const data = await response.json()
@@ -47,8 +121,8 @@ export default function Login() {
 
       // If API verification succeeds, sign in with NextAuth
       const result = await signIn("credentials", {
-        email,
-        password,
+        email: formData.email,
+        password: formData.password,
         redirect: false,
       })
 
@@ -60,50 +134,89 @@ export default function Login() {
       router.push("/dashboard")
     } catch (error) {
       setError(error instanceof Error ? error.message : "Login failed")
+      // Focus the first input field on error
+      const firstInput = document.querySelector('input')
+      firstInput?.focus()
     } finally {
       setLoading(false)
     }
   }
 
+  // Handle Enter key press
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !loading && isValid) {
+      handleSubmit(e as any)
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-light)] py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-[400px] shadow-lg">
+      <Card className="w-[400px] border-[var(--border-color-light)] shadow-sm hover:shadow-md transition-shadow duration-200">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
-          <CardDescription className="text-center">Sign in to your account</CardDescription>
+          <CardTitle className="text-2xl font-bold text-center text-[var(--color-text-dark)]">Welcome Back</CardTitle>
+          <CardDescription className="text-center text-[var(--color-text-dark)]/80">Sign in to your account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                name="email" 
-                type="email" 
-                placeholder="Enter your email" 
-                required 
-                className="w-full"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                name="password" 
-                type="password" 
-                placeholder="Enter your password" 
-                required 
-                className="w-full"
-              />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="email" className="text-[var(--color-text-dark)] select-none">Email</Label>
+                <Input 
+                  id="email" 
+                  name="email" 
+                  type="email" 
+                  placeholder="Enter your email" 
+                  required 
+                  value={formData.email}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  onKeyPress={handleKeyPress}
+                  className={`mt-1.5 w-full border-[var(--border-color-light)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]/20 ${
+                    touched.email && errors.email 
+                      ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:ring-[var(--color-danger)]/20' 
+                      : ''
+                  }`}
+                  disabled={loading}
+                  autoComplete="email"
+                  autoFocus
+                />
+                {touched.email && errors.email && (
+                  <p className="mt-1.5 text-sm text-[var(--color-danger)] select-none">{errors.email}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="password" className="text-[var(--color-text-dark)] select-none">Password</Label>
+                <Input 
+                  id="password" 
+                  name="password" 
+                  type="password" 
+                  placeholder="Enter your password" 
+                  required 
+                  value={formData.password}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  onKeyPress={handleKeyPress}
+                  className={`mt-1.5 w-full border-[var(--border-color-light)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]/20 ${
+                    touched.password && errors.password
+                      ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:ring-[var(--color-danger)]/20'
+                      : ''
+                  }`}
+                  disabled={loading}
+                  autoComplete="current-password"
+                />
+                {touched.password && errors.password && (
+                  <p className="mt-1.5 text-sm text-[var(--color-danger)] select-none">{errors.password}</p>
+                )}
+              </div>
             </div>
             {error && (
-              <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-md">
+              <div className="text-[var(--color-danger)] text-sm text-center bg-[var(--color-danger-light)] p-2 rounded-md select-none">
                 {error}
               </div>
             )}
             <Button 
               type="submit"
-              className="w-full" 
+              className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] cursor-pointer transition-colors duration-200" 
               disabled={loading}
             >
               {loading ? (
@@ -118,20 +231,16 @@ export default function Login() {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[var(--border-color-light)]" />
+            <span className="text-sm text-[var(--color-text-dark)]/40 select-none">or</span>
+            <div className="flex-1 h-px bg-[var(--border-color-light)]" />
           </div>
           <Button 
             variant="outline" 
-            className="w-full flex items-center justify-center gap-2"
+            className="w-full flex items-center justify-center gap-2 border-[var(--border-color-light)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] cursor-pointer transition-all duration-200"
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+            disabled={loading}
           >
             <svg className="w-5 h-5" viewBox="0 0 48 48">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
@@ -141,9 +250,9 @@ export default function Login() {
             </svg>
             Sign in with Google
           </Button>
-          <p className="text-sm text-center text-muted-foreground">
+          <p className="text-sm text-center text-[var(--color-text-dark)]/60 select-none">
             Don't have an account?{" "}
-            <a href="/signup" className="text-primary hover:underline font-medium">
+            <a href="/signup" className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] font-medium cursor-pointer transition-colors duration-200">
               Sign up
             </a>
           </p>

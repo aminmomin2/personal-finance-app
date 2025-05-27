@@ -1,133 +1,117 @@
 "use client"
 
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { useState } from "react"
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./ui/card"
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "./ui/chart"
 const chartData = [
-  { month: "January", desktop: 100 },
-  { month: "February", desktop: 200 },
-  { month: "March", desktop: 300 },
-  { month: "April", desktop: 400 },
-  { month: "May", desktop: 500 },
-  { month: "June", desktop: 600 },
-  { month: "July", desktop: 600 },
-  { month: "August", desktop: 600 },
+  { month: "Jan", value: 4000 },
+  { month: "Feb", value: 4500 },
+  { month: "Mar", value: 4200 },
+  { month: "Apr", value: 4800 },
+  { month: "May", value: 5200 },
+  { month: "Jun", value: 5100 },
+  { month: "Jul", value: 5500 },
+  { month: "Aug", value: 5800 },
+  { month: "Sep", value: 6200 },
+  { month: "Oct", value: 6500 },
+  { month: "Nov", value: 6800 },
+  { month: "Dec", value: 7200 },
 ]
 
-const chartConfig = {
-  desktop: {
-    label: "Desktop",
-    color: "hsl(var(--chart-1))",
-  },
-  mobile: {
-    label: "Mobile",
-    color: "hsl(var(--chart-2))",
-  },
-} satisfies ChartConfig
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 rounded-lg shadow-lg border border-[var(--border-color-light)]">
+        <p className="text-sm font-medium text-[var(--color-text-dark)]">{label}</p>
+        <p className="text-lg font-semibold text-[var(--color-primary)]">
+          ${payload[0].value.toLocaleString()}
+        </p>
+      </div>
+    )
+  }
+  return null
+}
 
 export function NetWorth() {
+  const [timeRange, setTimeRange] = useState("1M")
+
   return (
-    <Card className="border-0 shadow-none w-full mb-0 pb-0 gap-0">
-      <CardHeader className="mb-5">
-        <CardTitle>$8700</CardTitle>
-        <CardDescription>$0 (0%)</CardDescription>
-      </CardHeader>
-      <CardContent className="mb-3">
-        <ChartContainer config={chartConfig}>
+    <div className="w-full h-full">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h3 className="text-2xl font-semibold text-[var(--color-text-dark)]">$72,000</h3>
+          <p className="text-sm text-[var(--color-success)] mt-1 flex items-center gap-1">
+            <span>+$4,200</span>
+            <span className="text-[var(--color-text-dark)]/60">(6.2%)</span>
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {["1W", "1M", "3M", "YTD", "All"].map((range) => (
+            <button
+              key={range}
+              onClick={() => setTimeRange(range)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                timeRange === range
+                  ? "bg-[var(--color-primary)] text-white"
+                  : "text-[var(--color-text-dark)]/60 hover:bg-[var(--color-bg-light)]"
+              }`}
+            >
+              {range}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="h-[300px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
           <AreaChart
-            accessibilityLayer
             data={chartData}
-            margin={{
-              left: 12,
-              right: 12,
-            }}
+            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
           >
-            <CartesianGrid vertical={false} />
+            <defs>
+              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              vertical={false}
+              stroke="var(--border-color-light)"
+            />
             <XAxis
               dataKey="month"
-              tickLine={false}
               axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
+              tickLine={false}
+              tick={{ fill: "var(--color-text-dark)", opacity: 0.6, fontSize: 12 }}
+              tickMargin={10}
             />
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent indicator="dot" />}
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "var(--color-text-dark)", opacity: 0.6, fontSize: 12 }}
+              tickFormatter={(value) => `$${value.toLocaleString()}`}
+              tickMargin={10}
             />
+            <Tooltip content={<CustomTooltip />} />
             <Area
-              dataKey="mobile"
-              type="natural"
-              fill="var(--color-mobile)"
-              fillOpacity={0.4}
-              stroke="var(--color-mobile)"
-              stackId="a"
-            />
-            <Area
-              dataKey="desktop"
-              type="natural"
-              fill="var(--color-desktop)"
-              fillOpacity={0.4}
-              stroke="var(--color-desktop)"
-              stackId="a"
+              type="monotone"
+              dataKey="value"
+              stroke="var(--color-primary)"
+              strokeWidth={2}
+              fill="url(#colorValue)"
+              dot={false}
+              activeDot={{
+                r: 6,
+                fill: "var(--color-primary)",
+                stroke: "white",
+                strokeWidth: 2,
+              }}
             />
           </AreaChart>
-        </ChartContainer>
-      </CardContent>
-      <CardFooter>
-        <div className="w-full items-start text-sm">
-            <nav className="flex justify-center gap-15">
-              <button className="
-                flex items-center justify-center
-                rounded-full border-[var(--hover-color-light)] border-2 p-2 pl-4 pr-4
-                text-[12px] tracking-widest font-mono"
-              >
-                1W
-              </button>
-              <button className="
-                flex items-center justify-center
-                rounded-full border-[var(--hover-color-light)] border-2 p-2 pl-4 pr-4
-                text-[12px] tracking-widest font-mono"
-              >
-                1M
-              </button>
-              <button className="
-                flex items-center justify-center
-                rounded-full border-[var(--hover-color-light)] border-2 p-2 pl-4 pr-4
-                text-[12px] tracking-widest font-mono"
-              >
-                3M
-              </button>
-              <button className="
-                flex items-center justify-center
-                rounded-full border-[var(--hover-color-light)] border-2 p-2 pl-4 pr-4
-                text-[12px] tracking-widest font-mono"
-              >
-                YTD
-              </button>
-              <button className="
-                flex items-center justify-center
-                rounded-full border-[var(--hover-color-light)] border-2 p-2 pl-4 pr-4
-                text-[12px] tracking-widest font-mono"
-              >
-                All
-              </button>
-            </nav>
-        </div>
-      </CardFooter>
-    </Card>
+        </ResponsiveContainer>
+      </div>
+    </div>
   )
 }

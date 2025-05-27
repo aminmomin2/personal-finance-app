@@ -78,7 +78,7 @@ export default function Sidebar() {
           })}
         </ul>
         <form action={async() => {
-          await signOut()
+          await signOut({ callbackUrl: "/login" })
         }}>
           <button className="w-full">
             <p

@@ -7,7 +7,7 @@ export default function AuthenticatedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-[var(--color-bg-light)]">
       {/* Sidebar */}
       <Sidebar />
       <div className="flex flex-col flex-1">
@@ -15,8 +15,10 @@ export default function AuthenticatedLayout({
         <Topbar />
 
         {/* Main Content */}
-        <main>
-          {children}
+        <main className="flex-1 p-6 overflow-auto">
+          <div className="container mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>

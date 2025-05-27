@@ -1,34 +1,56 @@
 "use client"
 
-import { usePathname } from "next/navigation";
-import { Plus, Info, Bell } from "lucide-react"
+import { usePathname } from "next/navigation"
+import { Plus, Info, Bell, Calendar, ChevronDown } from "lucide-react"
+import { Button } from "./ui/button"
 
 export default function Topbar() {
   const path = usePathname()
+  const timeRange = "This Month" // This should be managed by state if needed
+
   return (
     <div className="
       flex flex-row justify-between items-center 
-      pl-7 pr-7 pt-5 
-      text-[30px]"
-    >
-      <p className="font-semibold w-50">
-        {(path.substring(1)) === "dashboard" ? "Hello Amin" : path.charAt(1).toUpperCase() + path.slice(2)}
-      </p>
-        <nav className="
-          flex items-center justify-end
-          w-full gap-5"
+      px-6 py-4
+      border-b border-[var(--border-color-light)]
+      bg-[var(--color-bg-light)]
+    ">
+      <div className="flex items-center gap-8">
+        <h1 className="text-2xl font-semibold text-[var(--color-text-dark)]">
+          {path.substring(1) === "dashboard" ? "Hello Amin" : path.charAt(1).toUpperCase() + path.slice(2)}
+        </h1>
+        {path === "/dashboard" && (
+          <div className="flex items-center gap-1 text-sm text-[var(--color-text-dark)]/60">
+            <Calendar className="w-4 h-4" />
+            <span>{timeRange}</span>
+            <ChevronDown className="w-4 h-4" />
+          </div>
+        )}
+      </div>
+      <nav className="flex items-center gap-4">
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="border-[var(--border-color-light)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
         >
-          <button className="
-            flex items-center 
-            rounded-full border-[var(--hover-color-light)] border-2 p-2 
-            text-[12px] tracking-widest font-mono"
-          >
-            <Plus className="w-4 h-4 mr-1"/>
-            Account
-          </button>
-          <Info className="w-5 h-5 flex-shrink-0 "/>
-          <Bell className="w-5 h-5 flex-shrink-0"/>
-        </nav>
+          <Plus className="w-4 h-4 mr-2"/>
+          Account
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="text-[var(--color-text-dark)] hover:text-[var(--color-primary)]"
+        >
+          <Info className="w-5 h-5"/>
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="text-[var(--color-text-dark)] hover:text-[var(--color-primary)]"
+        >
+          <Bell className="w-5 h-5"/>
+        </Button>
+      </nav>
     </div>
   )
 }
